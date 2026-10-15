@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, shrink-to-fit=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="format-detection" content="telephone=no">
+    <title>СТУДЛАЙФ ✨</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* --- SPLASH & ONBOARDING STYLES --- */
+        #splash-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-primary); z-index: 9999;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transition: opacity 0.5s ease, visibility 0.5s;
+        }
+        .splash-logo { font-size: 64px; margin-bottom: 20px; animation: float 3s ease-in-out infinite; filter: drop-shadow(0 0 15px rgba(6, 182, 212, 0.4)); }
+        .splash-title { font-size: 36px; font-weight: 800; background: var(--gradient-1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 10px; letter-spacing: -0.5px; }
+        .loader-bar { width: 160px; height: 4px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden; }
+        .loader-progress { height: 100%; width: 0%; background: var(--gradient-1); transition: width 1.5s cubic-bezier(0.22, 1, 0.36, 1); border-radius: 4px; }
+        .splash-status { margin-top: 15px; font-size: 13px; color: var(--text-muted); opacity: 0.8; font-weight: 500; }
+        
+        #onboarding-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(12px);
+            z-index: 9998; display: none; align-items: center; justify-content: center;
+            opacity: 0; transition: opacity 0.3s;
+        }
+        #onboarding-overlay.active { display: flex; opacity: 1; }
+        
+        .onboarding-card {
+            background: var(--bg-secondary); width: 90%; max-width: 380px;
+            border-radius: 24px; padding: 30px; border: 1px solid var(--glass-border);
+            box-shadow: 0 25px 60px rgba(0,0,0,0.5); text-align: center;
+            transform: translateY(20px); transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        #onboarding-overlay.active .onboarding-card { transform: translateY(0); }
+
+        .class-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 20px 0; }
+        .class-option {
+            background: var(--bg-card); border: 2px solid transparent; border-radius: 16px;
+            padding: 15px 5px; cursor: pointer; transition: all 0.2s;
+        }
+        .class-option.selected { border-color: var(--accent); background: rgba(6, 182, 212, 0.1); box-shadow: 0 0 15px rgba(6, 182, 212, 0.15); }
+        .class-option:active { transform: scale(0.96); }
+        .class-icon { font-size: 28px; margin-bottom: 6px; display: block; }
+        .class-name { font-size: 11px; font-weight: 600; color: var(--text-secondary); }
+        
+        .input-hero {
+            width: 100%; padding: 14px; background: var(--bg-primary); border: 1px solid var(--glass-border);
+            border-radius: 14px; color: var(--text-primary); font-size: 16px; text-align: center;
+            margin-bottom: 20px; outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .input-hero:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.15); }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+
+        /* --- MAIN CSS --- */
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        :root {
+            --bg-primary: #0f172a; --bg-secondary: #1e293b; --bg-card: rgba(30, 41, 59, 0.6);
+            --bg-card-solid: #1e293b; --glass-border: rgba(255, 255, 255, 0.08);
+            --accent: #06b6d4; --accent-2: #3b82f6; --accent-3: #10b981;
+            --green: #10b981; --gold: #f59e0b; --blue: #3b82f6; --purple: #8b5cf6; --red: #ef4444;
+            --text-primary: #f8fafc; --text-secondary: #94a3b8; --text-muted: #64748b;
+            --border: rgba(255, 255, 255, 0.08); --radius: 20px; --radius-sm: 16px; --radius-xs: 12px;
+            --shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+            --safe-bottom: env(safe-area-inset-bottom, 0px); --safe-top: env(safe-area-inset-top, 0px);
+            --nav-height: 64px;
+            --gradient-1: linear-gradient(135deg, #06b6d4, #3b82f6);
+            --gradient-2: linear-gradient(135deg, #10b981, #06b6d4);
+        }
+        [data-theme="light"] {
+            --bg-primary: #f8fafc; --bg-secondary: #ffffff; --bg-card: rgba(255, 255, 255, 0.85);
+            --bg-card-solid: #ffffff; --glass-border: rgba(0, 0, 0, 0.08);
+            --accent: #0284c7; --accent-2: #2563eb;
+            --text-primary: #0f172a; --text-secondary: #475569; --text-muted: #94a3b8;
+            --border: rgba(0, 0, 0, 0.08); --shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+        }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary); color: var(--text-primary);
+            min-height: 100vh; min-height: 100dvh; overflow-x: hidden;
+            transition: background 0.2s ease; overscroll-behavior-y: none; -webkit-font-smoothing: antialiased;
+        }
+        .glass { background: var(--bg-card); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--glass-border); }
+        
+        @media (max-width: 768px) {
+            .logo-icon, .avatar, .task-item, .stat-c, .ach, .shop-item, .av-item { transition: transform 0.15s cubic-bezier(0.2, 0.9, 0.4, 1.1); }
+            .logo-icon:active, .avatar:active, .task-item:active { transform: scale(0.97); }
+            .stat-c:active { transform: scale(0.96); }
+            .app { padding: calc(var(--safe-top) + 8px) 12px calc(var(--nav-height) + var(--safe-bottom) + 8px); }
+            .profile-card { padding: 14px !important; gap: 12px !important; }
+            .avatar { width: 56px !important; height: 56px !important; font-size: 28px !important; }
+            .stats-grid { gap: 8px !important; }
+            .stat-c { padding: 10px 4px !important; }
+            .stat-c .si { font-size: 18px !important; } .stat-c .sv { font-size: 16px !important; } .stat-c .sl { font-size: 8px !important; }
+            .task-item { padding: 12px !important; gap: 10px !important; cursor: pointer; touch-action: pan-y pinch-zoom; }
+            .t-name { font-size: 13px !important; font-weight: 600; } .t-desc { font-size: 11px !important; line-height: 1.3; }
+            .search-input { padding: 10px 14px !important; font-size: 13px !important; }
+            .filter-btn { padding: 6px 12px !important; font-size: 11px !important; }
+            .main-tabs { position: fixed !important; bottom: 0 !important; left: 0 !important; right: 0 !important; background: var(--bg-secondary) !important; backdrop-filter: blur(20px) !important; -webkit-backdrop-filter: blur(20px) !important; border-top: 1px solid var(--border) !important; padding-bottom: var(--safe-bottom) !important; z-index: 100 !important; will-change: transform; }
+            .main-tabs-inner { display: flex !important; justify-content: space-around !important; padding: 6px 8px 0 !important; }
+            .m-tab-btn { flex: 1 !important; display: flex !important; flex-direction: column !important; align-items: center !important; gap: 2px !important; padding: 6px 0 10px !important; font-size: 10px !important; font-weight: 500 !important; color: var(--text-muted) !important; transition: color 0.1s ease !important; }
+            .m-tab-btn .tab-icon { font-size: 22px !important; transition: transform 0.1s cubic-bezier(0.2, 0.9, 0.4, 1.1); }
+            .m-tab-btn:active .tab-icon { transform: scale(0.92) !important; }
+            .m-tab-btn.active { color: var(--accent) !important; }
+            .fab { bottom: calc(var(--nav-height) + var(--safe-bottom) + 12px) !important; right: 16px !important; width: 50px !important; height: 50px !important; border-radius: 25px !important; font-size: 24px !important; background: var(--gradient-1) !important; box-shadow: 0 4px 15px rgba(6, 182, 212, 0.4) !important; transition: transform 0.1s, box-shadow 0.2s !important; }
+            .fab:active { transform: scale(0.92) !important; box-shadow: 0 2px 8px rgba(6, 182, 212, 0.5) !important; }
+            .sheet-ov { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px); z-index: 200; display: none; align-items: flex-end; justify-content: center; will-change: opacity; }
+            .sheet-ov.active { display: flex !important; animation: fadeIn 0.2s ease; }
+            .sheet { background: var(--bg-secondary); border-radius: 24px 24px 0 0; width: 100%; max-height: 85vh; overflow-y: auto; padding: 20px 20px calc(20px + var(--safe-bottom)); animation: slideUp 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1); will-change: transform; -webkit-overflow-scrolling: touch; }
+            @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+            @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+            .heatmap { grid-template-columns: repeat(26, 1fr) !important; gap: 2px !important; }
+            .hm-cell { border-radius: 3px !important; }
+        }
+        @media (min-width: 769px) {
+            .mobile-only { display: none !important; } .desktop-only { display: block !important; }
+            .main-layout { display: grid; grid-template-columns: 1fr 340px; gap: 20px; }
+            .tabs { display: flex; gap: 8px; margin-bottom: 20px; background: var(--bg-card); border-radius: var(--radius); padding: 6px; }
+            .tab-btn { flex: 1; padding: 12px 16px; background: transparent; border: none; color: var(--text-muted); font-weight: 600; border-radius: 12px; cursor: pointer; transition: all 0.2s; }
+            .tab-btn.active { background: var(--gradient-1); color: white; }
+        }
+        .task-item { display: flex; align-items: center; gap: 14px; padding: 14px 16px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm); transition: all 0.2s ease; position: relative; overflow: hidden; cursor: pointer; }
+        .task-item:active { transform: scale(0.99); }
+        .task-item.overdue { border-left: 3px solid var(--red); }
+        .t-check { width: 24px; height: 24px; min-width: 24px; border: 2px solid var(--text-muted); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; transition: all 0.15s; }
+        .task-item.completed .t-check { background: var(--green); border-color: var(--green); color: #0f172a; }
+        .t-info { flex: 1; }
+        .t-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+        .t-badge { font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 20px; }
+        .t-badge.xp { background: rgba(139, 92, 246, 0.15); color: var(--purple); }
+        .t-badge.gold { background: rgba(245, 158, 11, 0.15); color: var(--gold); }
+        .bar-c { width: 100%; height: 6px; background: rgba(128, 128, 128, 0.2); border-radius: 10px; overflow: hidden; }
+        .bar-xp { height: 100%; background: var(--gradient-1); width: 0%; transition: width 0.3s ease; }
+        .bar-hp { height: 100%; background: linear-gradient(90deg, var(--red), #f87171); width: 100%; transition: width 0.3s ease; }
+        .btn, .filter-btn, .tab-btn, .hdr-btn, .add-btn { transition: transform 0.1s, background 0.2s, box-shadow 0.2s; }
+        .btn:active, .filter-btn:active, .hdr-btn:active { transform: scale(0.96); }
+        .toast-c { position: fixed; top: 16px; left: 16px; right: 16px; z-index: 2000; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+        .toast { padding: 12px 16px; border-radius: 14px; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 10px; animation: toastSlide 0.2s ease, fadeOut 0.2s ease 2.5s forwards; box-shadow: var(--shadow); pointer-events: auto; backdrop-filter: blur(10px); }
+        @keyframes toastSlide { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeOut { to { opacity: 0; transform: translateY(-10px); visibility: hidden; } }
+        .toast.success { background: var(--green); color: #0f172a; }
+        .toast.xp { background: var(--gradient-1); color: white; }
+        .toast.gold-toast { background: var(--gold); color: #1e293b; }
+        .toast.error, .toast.hp { background: var(--red); color: white; }
+        .toast.levelup { background: var(--gradient-2); color: #0f172a; }
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <!-- 1. SPLASH SCREEN -->
+    <div id="splash-screen">
+        <div class="splash-logo">🎓</div>
+        <div class="splash-title">СТУДЛАЙФ</div>
+        <div class="loader-bar"><div class="loader-progress" id="splashProgress"></div></div>
+        <div class="splash-status" id="splashStatus">Загрузка семестра...</div>
+    </div>
+
+    <!-- 2. ONBOARDING MODAL -->
+    <div id="onboarding-overlay">
+        <div class="onboarding-card">
+            <h2 style="font-size: 22px; margin-bottom: 8px; font-weight: 800;">Создание Профиля</h2>
+            <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 20px;">Выбери свой трек, чтобы начать семестр.</p>
+            
+            <input type="text" id="heroNameInput" class="input-hero" placeholder="Введите ваше имя" maxlength="15">
+            
+            <div class="class-grid">
+                <div class="class-option selected" onclick="selectClass('scholar', this)">
+                    <span class="class-icon">🎓</span>
+                    <span class="class-name">Отличник</span>
+                </div>
+                <div class="class-option" onclick="selectClass('activist', this)">
+                    <span class="class-icon">🚀</span>
+                    <span class="class-name">Активист</span>
+                </div>
+                <div class="class-option" onclick="selectClass('freelancer', this)">
+                    <span class="class-icon">💻</span>
+                    <span class="class-name">Фрилансер</span>
+                </div>
+            </div>
+
+            <button class="btn-p" onclick="finishOnboarding()" style="width:100%; padding: 14px; background: var(--gradient-1); border: none; border-radius: 14px; color: white; font-weight: 700; cursor:pointer; font-size: 15px; box-shadow: 0 4px 15px rgba(6, 182, 212, 0.3);">Начать семестр</button>
+        </div>
+    </div>
+
+    <!-- 3. MAIN APP CONTENT -->
+    <div class="app" id="mainApp" style="opacity: 0; transition: opacity 0.5s;">
+        <!-- Mobile Header -->
+        <div class="mobile-only" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 38px; height: 38px; background: var(--gradient-1); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3);">🚀</div>
+                <div><h1 style="font-size: 18px; font-weight: 800; background: linear-gradient(135deg, #06b6d4, #3b82f6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">СТУДЛАЙФ</h1><span style="font-size: 9px; color: var(--text-muted);">✨ геймификация учёбы и жизни</span></div>
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <button class="hdr-btn" id="soundToggleMobile" style="width: 38px; height: 38px; background: var(--bg-card); border: 1px solid var(--glass-border); border-radius: 12px; font-size: 18px; display: flex; align-items: center; justify-content: center;">🔊</button>
+                <button class="hdr-btn" id="settingsBtnMobile" style="width: 38px; height: 38px; background: var(--bg-card); border: 1px solid var(--glass-border); border-radius: 12px; font-size: 18px; display: flex; align-items: center; justify-content: center;">⚙️</button>
+            </div>
+        </div>
+
+        <!-- Profile Section -->
+        <div class="profile-bar" style="display: grid; gap: 12px; margin-bottom: 16px;">
+            <div class="profile-card glass" style="display: flex; align-items: center; gap: 14px; padding: 14px; border-radius: var(--radius-sm);">
+                <div class="avatar-box" id="avatarBox" style="cursor: pointer;">
+                    <div class="avatar" id="avatarEl" style="width: 64px; height: 64px; border-radius: 18px; background: var(--gradient-1); display: flex; align-items: center; justify-content: center; font-size: 28px; position: relative; box-shadow: 0 4px 15px rgba(6, 182, 212, 0.3);">🚀<span id="avatarLvl" style="position: absolute; bottom: -4px; right: -4px; background: var(--accent); color: white; font-size: 10px; padding: 2px 6px; border-radius: 12px; font-weight: 700;">1</span></div>
+                </div>
+                <div class="p-info" style="flex:1">
+                    <h2 id="pName" style="font-size: 16px; font-weight: 700;">Студент</h2>
+                    <div class="cls" id="pClass" style="font-size: 11px; opacity: 0.8; color: var(--text-secondary);">🎓 Первокурсник</div>
+                    <div style="margin-top: 8px;">
+                        <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;"><div class="bar-c" style="flex:1"><div class="bar-xp" id="xpBar" style="width:0%"></div></div><span style="font-size: 10px; color: var(--text-muted); font-weight: 600;" id="xpTxt">0/100</span></div>
+                        <div style="display: flex; align-items: center; gap: 6px;"><div class="bar-c" style="flex:1"><div class="bar-hp" id="hpBar" style="width:100%"></div></div><span style="font-size: 10px; color: var(--text-muted); font-weight: 600;" id="hpTxt">50/50</span></div>
+                    </div>
+                    <div class="attrs" style="display: flex; gap: 6px; margin-top: 8px;">
+                        <span style="font-size: 10px; padding: 3px 8px; background: rgba(239, 68, 68, 0.15); color: var(--red); border-radius: 20px; font-weight: 600;">💪 <span id="aStr">5</span></span>
+                        <span style="font-size: 10px; padding: 3px 8px; background: rgba(59, 130, 246, 0.15); color: var(--blue); border-radius: 20px; font-weight: 600;">🧠 <span id="aInt">5</span></span>
+                        <span style="font-size: 10px; padding: 3px 8px; background: rgba(16, 185, 129, 0.15); color: var(--green); border-radius: 20px; font-weight: 600;">🏃 <span id="aEnd">5</span></span>
+                    </div>
+                </div>
+            </div>
+            <div class="stats-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+                <div class="stat-c glass" style="padding: 10px; text-align: center; border-radius: var(--radius-xs);"><div style="font-size: 16px; margin-bottom: 2px;">✅</div><div style="font-size: 18px; font-weight: 800;" id="sDone">0</div><div style="font-size: 9px; color: var(--text-muted);">Сделано</div></div>
+                <div class="stat-c glass" style="padding: 10px; text-align: center; border-radius: var(--radius-xs);"><div style="font-size: 16px; margin-bottom: 2px;">⭐</div><div style="font-size: 18px; font-weight: 800;" id="sGold">0</div><div style="font-size: 9px; color: var(--text-muted);">Баллы</div></div>
+                <div class="stat-c glass" style="padding: 10px; text-align: center; border-radius: var(--radius-xs);"><div style="font-size: 16px; margin-bottom: 2px;">📋</div><div style="font-size: 18px; font-weight: 800;" id="sActive">0</div><div style="font-size: 9px; color: var(--text-muted);">Актив.</div></div>
+                <div class="stat-c glass" style="padding: 10px; text-align: center; border-radius: var(--radius-xs);"><div style="font-size: 16px; margin-bottom: 2px;">🔥</div><div style="font-size: 18px; font-weight: 800;" id="sStreak">0</div><div style="font-size: 9px; color: var(--text-muted);">Серия</div></div>
+            </div>
+        </div>
+
+        <!-- Search & Filter -->
+        <div class="search-bar" style="display: flex; gap: 8px; margin-bottom: 12px;">
+            <input type="text" class="search-input" id="searchInput" placeholder="🔍 Поиск задач" style="flex:1; padding: 10px 14px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; font-size: 13px; color: var(--text-primary); outline: none;">
+            <button class="filter-btn active" data-filter="all" style="padding: 8px 12px; border-radius: 12px; font-size: 11px; background: var(--bg-card); border: 1px solid var(--border); color: var(--text-primary); font-weight: 600;">Все</button>
+            <button class="filter-btn" data-filter="today" style="padding: 8px 12px; border-radius: 12px; font-size: 11px; background: var(--bg-card); border: 1px solid var(--border); color: var(--text-primary); font-weight: 600;">📅</button>
+        </div>
+
+        <!-- Main Task Area -->
+        <div class="task-sec glass" style="border-radius: var(--radius-sm); padding: 12px; margin-bottom: 12px;">
+            <div class="sec-hdr" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h3 id="secTitle" style="font-size: 14px; font-weight: 700;">🔄 Привычки</h3>
+                <button class="add-btn desktop-only" id="addBtnDesktop" style="border: 1px solid var(--glass-border); background: var(--bg-card); padding: 6px 12px; border-radius: 20px; font-size: 12px; color: var(--text-primary); font-weight: 600; cursor: pointer;">+ Добавить</button>
+            </div>
+            <div class="task-list" id="taskList" style="display: flex; flex-direction: column; gap: 8px;"></div>
+        </div>
+
+        <!-- Mobile Bottom Tabs -->
+        <nav class="main-tabs mobile-only">
+            <div style="display: flex; justify-content: space-around; padding: 6px 8px 0;">
+                <button class="m-tab-btn active" data-tab="habits" style="flex:1; display: flex; flex-direction: column; align-items: center; background: none; border: none; color: var(--text-muted); font-size: 10px;"><span class="tab-icon">🔄</span><span>Привычки</span><span class="tab-cnt" id="cHabitsMobile" style="display: none; background: var(--accent); color: white; font-size: 9px; padding: 1px 5px; border-radius: 10px; margin-top: 2px;">0</span></button>
+                <button class="m-tab-btn" data-tab="dailies" style="flex:1; display: flex; flex-direction: column; align-items: center; background: none; border: none; color: var(--text-muted); font-size: 10px;"><span class="tab-icon">📅</span><span>Ежедневные</span><span class="tab-cnt" id="cDailiesMobile" style="display: none; background: var(--accent); color: white; font-size: 9px; padding: 1px 5px; border-radius: 10px; margin-top: 2px;">0</span></button>
+                <button class="m-tab-btn" data-tab="todos" style="flex:1; display: flex; flex-direction: column; align-items: center; background: none; border: none; color: var(--text-muted); font-size: 10px;"><span class="tab-icon">📝</span><span>Задачи</span><span class="tab-cnt" id="cTodosMobile" style="display: none; background: var(--accent); color: white; font-size: 9px; padding: 1px 5px; border-radius: 10px; margin-top: 2px;">0</span></button>
+                <button class="m-tab-btn" data-tab="rewards" style="flex:1; display: flex; flex-direction: column; align-items: center; background: none; border: none; color: var(--text-muted); font-size: 10px;"><span class="tab-icon">🎁</span><span>Награды</span><span class="tab-cnt" id="cRewardsMobile" style="display: none; background: var(--accent); color: white; font-size: 9px; padding: 1px 5px; border-radius: 10px; margin-top: 2px;">0</span></button>
+            </div>
+        </nav>
+
+        <!-- FAB -->
+        <button class="fab" id="fabAdd" style="position: fixed; bottom: 80px; right: 16px; width: 50px; height: 50px; border-radius: 25px; background: var(--gradient-1); border: none; color: white; font-size: 24px; box-shadow: 0 4px 15px rgba(6, 182, 212, 0.4); z-index: 50; cursor: pointer; display: flex; align-items: center; justify-content: center;">+</button>
+
+        <!-- MOBILE BOTTOM SHEETS -->
+        <div class="sheet-ov" id="mTaskMobile">
+            <div class="sheet">
+                <h3 id="mTaskTitleMobile" style="margin-bottom: 16px; font-size: 18px; font-weight: 700;">✨ Новая привычка</h3>
+                <div class="fg" style="margin-bottom: 12px;"><input type="text" id="tNameMobile" placeholder="Название задачи" style="width:100%; padding: 12px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 12px; font-size: 14px; color: var(--text-primary); outline: none;"></div>
+                <div class="fg" style="margin-bottom: 12px;"><textarea id="tDescMobile" placeholder="Описание (необязательно)" style="width:100%; padding: 12px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 12px; font-size: 13px; min-height: 70px; color: var(--text-primary); outline: none; resize: none;"></textarea></div>
+                <div class="fr" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                    <select id="tCatMobile" style="padding: 10px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 12px; color: var(--text-primary); outline: none;"><option>Учёба</option><option>Проект</option><option>Здоровье</option><option>Спорт</option><option>Быт</option><option>Карьера</option></select>
+                    <input type="date" id="tDeadMobile" style="padding: 10px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 12px; color: var(--text-primary); outline: none;">
+                </div>
+                <div style="margin-bottom: 12px;">
+                    <div class="diff-sel" style="display: flex; gap: 8px;">
+                        <button class="d-btn active" data-diff="easy" style="flex:1; padding: 8px; border-radius: 12px; background: var(--bg-card); border: 1px solid var(--border); color: var(--text-primary); font-size: 12px; font-weight: 600;">😊 Лёгкая</button>
+                        <button class="d-btn" data-diff="medium" style="flex:1; padding: 8px; border-radius: 12px; background: var(--bg-card); border: 1px solid var(--border); color: var(--text-primary); font-size: 12px; font-weight: 600;">😐 Средняя</button>
+                        <button class="d-btn" data-diff="hard" style="flex:1; padding: 8px; border-radius: 12px; background: var(--bg-card); border: 1px solid var(--border); color: var(--text-primary); font-size: 12px; font-weight: 600;">😤 Сложная</button>
+                    </div>
+                </div>
+                <div id="rewardCostBoxMobile" style="display:none; margin-bottom: 16px;"><input type="number" id="tCostMobile" placeholder="Стоимость в баллах ⭐" style="width:100%; padding: 12px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 12px; color: var(--text-primary); outline: none;"></div>
+                <div class="m-acts" style="display: flex; gap: 12px; margin-top: 8px;">
+                    <button class="btn btn-s" id="mTaskCancelMobile" style="flex:1; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 14px; font-weight: 600; color: var(--text-primary); cursor: pointer;">Отмена</button>
+                    <button class="btn btn-p" id="mTaskSaveMobile" style="flex:1; padding: 12px; background: var(--gradient-1); border: none; border-radius: 14px; color: white; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3);">✨ Создать</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="sheet-ov" id="mShopMobile"><div class="sheet"><h3 style="font-size: 18px; font-weight: 700; margin-bottom: 16px;">🛍️ Магазин наград</h3><div class="shop-grid" id="shopGridMobile" style="display: grid; grid-template-columns: repeat(2,1fr); gap: 10px; margin: 16px 0;"></div><button class="btn btn-s" onclick="closeSheet('mShopMobile')" style="width:100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 14px; color: var(--text-primary); font-weight: 600; cursor: pointer;">Закрыть</button></div></div>
+        <div class="sheet-ov" id="mAvatarMobile"><div class="sheet"><h3 style="font-size: 18px; font-weight: 700; margin-bottom: 16px;">🎨 Выбор аватара</h3><div class="avatar-grid" id="avatarGridMobile" style="display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin: 16px 0;"></div><button class="btn btn-s" onclick="closeSheet('mAvatarMobile')" style="width:100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 14px; color: var(--text-primary); font-weight: 600; cursor: pointer;">Закрыть</button></div></div>
+        <div class="sheet-ov" id="mSettingsMobile"><div class="sheet"><h3 style="font-size: 18px; font-weight: 700; margin-bottom: 16px;">⚙️ Настройки</h3><div class="settings-item" style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border);"><span style="font-weight: 500;">🌓 Тёмная тема</span><div class="toggle active" id="themeToggleMobile" onclick="toggleThemeMobile()" style="width: 44px; height: 24px; background: var(--green); border-radius: 12px; position: relative; cursor: pointer; transition: background 0.2s;"><div style="position: absolute; right: 2px; top: 2px; width: 20px; height: 20px; background: white; border-radius: 10px; transition: transform 0.2s;"></div></div></div>
+        <div class="settings-item" style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border);"><span style="font-weight: 500;">🔊 Звуки</span><div class="toggle active" id="soundSettingMobile" onclick="toggleSound()" style="width: 44px; height: 24px; background: var(--green); border-radius: 12px; position: relative; cursor: pointer; transition: background 0.2s;"><div style="position: absolute; right: 2px; top: 2px; width: 20px; height: 20px; background: white; border-radius: 10px; transition: transform 0.2s;"></div></div></div>
+        <div style="margin-top: 16px; display: grid; gap: 8px;"><button class="btn btn-s" onclick="exportData()" style="width:100%; padding: 12px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; color: var(--text-primary); font-weight: 600; cursor: pointer;">💾 Экспорт данных</button><button class="btn btn-s" onclick="importData()" style="width:100%; padding: 12px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; color: var(--text-primary); font-weight: 600; cursor: pointer;">📥 Импорт данных</button><button class="btn btn-s" onclick="undoAction()" style="width:100%; padding: 12px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; color: var(--text-primary); font-weight: 600; cursor: pointer;">↩️ Отменить действие</button></div>
+        <button class="btn btn-p" onclick="closeSheet('mSettingsMobile')" style="width:100%; margin-top: 16px; padding: 12px; background: var(--gradient-1); border: none; border-radius: 14px; color: white; font-weight: 700; cursor: pointer;">Закрыть</button></div></div>
+
+        <div class="toast-c" id="toastC"></div>
+        <input type="file" id="impFile2" accept=".json" style="display:none">
+    </div>
+
+    <script>
+        // --- SPLASH & ONBOARDING LOGIC ---
+        let selectedClass = 'scholar';
+        
+        window.addEventListener('load', () => {
+            const progress = document.getElementById('splashProgress');
+            const status = document.getElementById('splashStatus');
+            
+            setTimeout(() => { progress.style.width = "40%"; status.innerText = "Подготовка расписания..."; }, 100);
+            setTimeout(() => { progress.style.width = "70%"; status.innerText = "Синхронизация зачётки..."; }, 800);
+            setTimeout(() => { 
+                progress.style.width = "100%"; 
+                status.innerText = "Готово!";
+                
+                setTimeout(() => {
+                    document.getElementById('splash-screen').style.opacity = '0';
+                    document.getElementById('splash-screen').style.visibility = 'hidden';
+                    
+                    if (!state.hasInitialized) {
+                        showOnboarding();
+                    } else {
+                        initGame();
+                    }
+                }, 500);
+            }, 1500);
+        });
+
+        function showOnboarding() {
+            document.getElementById('onboarding-overlay').classList.add('active');
+        }
+
+        function selectClass(cls, el) {
+            selectedClass = cls;
+            document.querySelectorAll('.class-option').forEach(opt => opt.classList.remove('selected'));
+            el.classList.add('selected');
+        }
+
+        function finishOnboarding() {
+            const name = document.getElementById('heroNameInput').value.trim() || "Студент";
+            
+            state.player.name = name;
+            state.player.cls = selectedClass === 'scholar' ? 'Отличник' : selectedClass === 'activist' ? 'Активист' : 'Фрилансер';
+            state.player.av = selectedClass === 'scholar' ? '🎓' : selectedClass === 'activist' ? '🚀' : '💻';
+            state.player.gold = 50;
+            state.hasInitialized = true;
+            
+            saveState();
+            
+            document.getElementById('onboarding-overlay').classList.remove('active');
+            toast(`Добро пожаловать, ${state.player.cls} ${name}!`);
+            initGame();
+        }
+
+        function initGame() {
+            document.getElementById('mainApp').style.opacity = '1';
+            updateClassAndPet();
+            render();
+            if (state.tasks.length === 0) {
+                addTask("habit", "Читать 20 минут", "Утро", "Учёба", "", "easy", 0);
+                addTask("daily", "Сделать домашку", "До вечера", "Учёба", "", "medium", 0);
+                addTask("todo", "Подготовиться к семинару", "", "Учёба", "", "hard", 0);
+                addTask("reward", "🎮 1 час игр", "", "Отдых", "", "easy", 30);
+                render();
+            }
+        }
+
+        // --- GAME LOGIC ---
+        const STORAGE_KEY = "studlife_responsive_v1";
+        let state = loadState();
+        let currentTab = "habits";
+        let editDifficulty = "easy";
+        let editMode = false;
+        let editId = null;
+        let soundEnabled = state.sound !== false;
+
+        function loadState() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) return JSON.parse(saved);
+            } catch(e) {}
+            return getDefaultState();
+        }
+
+        function getDefaultState() {
+            return {
+                hasInitialized: false,
+                player: { name: "Студент", level: 1, xp: 0, xpN: 100, gold: 0, hp: 50, maxHp: 50, maxStreak: 0, streak: 0, done: 0, cls: "Первокурсник", av: "🚀", attr: { str: 5, int: 5, end: 5 } },
+                tasks: [],
+                achs: {},
+                activeDates: [],
+                dailyStats: {},
+                lastActive: null,
+                lastReset: null,
+                theme: "dark",
+                pet: { l: 1, e: "📝", n: "Черновик" },
+                boss: { n: "Сессия 👹", hp: 100, maxHp: 100, dmg: 10, rew: { xp: 60, gold: 40 } },
+                bossDef: 0,
+                purchased: [],
+                dailyLogin: { streak: 0, last: null },
+                dailyEvent: { t: null, exp: null, d: "" },
+                undo: [],
+                search: "",
+                filter: "all",
+                pomo: { dur: 25, rem: 1500, run: false },
+                sound: true
+            };
+        }
+
+        function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+        function pushUndo() {
+            state.undo.push(JSON.stringify({ tasks: state.tasks, player: state.player, boss: state.boss, pet: state.pet }));
+            if (state.undo.length > 5) state.undo.shift();
+        }
+        function undoAction() {
+            if (!state.undo.length) return toast("↩️ Нет действий для отмены", "error");
+            const prev = JSON.parse(state.undo.pop());
+            state.tasks = prev.tasks; state.player = prev.player; state.boss = prev.boss; state.pet = prev.pet;
+            saveState(); render(); toast("↩️ Действие отменено", "success");
+        }
+        function playSound(type) {
+            if (!soundEnabled) return;
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+                osc.type = type === "err" ? "sawtooth" : "sine";
+                osc.frequency.value = type === "ok" ? 523 : type === "err" ? 200 : 440;
+                gain.gain.value = 0.05; gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
+                osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + 0.2); audioCtx.close();
+            } catch(e) {}
+        }
+        function addXP(amount) {
+            state.player.xp += amount;
+            while (state.player.xp >= state.player.xpN) {
+                state.player.xp -= state.player.xpN; state.player.level++;
+                state.player.xpN = Math.floor(state.player.xpN * 1.3);
+                state.player.maxHp += 5; state.player.hp = state.player.maxHp;
+                updateClassAndPet(); toast("🎉 Уровень " + state.player.level + "!", "levelup");
+                confettiEffect(); playSound("lvl");
+            }
+        }
+        function updateClassAndPet() {
+            const classes = [{l:1,t:"Первокурсник"},{l:3,t:"Отличник"},{l:5,t:"Активист"},{l:8,t:"Фрилансер"},{l:12,t:"Бакалавр"},{l:16,t:"Магистр"},{l:20,t:"Аспирант"},{l:30,t:"Легенда ВУЗа"}];
+            const pets = [{m:1,e:"📝",n:"Черновик"},{m:3,e:"📚",n:"Конспект"},{m:5,e:"✅",n:"Зачёт"},{m:8,e:"🎓",n:"Диплом"},{m:12,e:"💼",n:"Оффер"},{m:16,e:"👑",n:"Легенда"}];
+            for (let i = classes.length-1; i >= 0; i--) if (state.player.level >= classes[i].l) { state.player.cls = classes[i].t; break; }
+            for (let i = pets.length-1; i >= 0; i--) if (state.player.level >= pets[i].m) { state.pet = { l: pets[i].m, e: pets[i].e, n: pets[i].n }; break; }
+        }
+        function addGold(amount) { state.player.gold += amount; }
+        function heal(amount) { state.player.hp = Math.min(state.player.maxHp, state.player.hp + amount); }
+        function damageBoss(amount) {
+            state.boss.hp = Math.max(0, state.boss.hp - amount);
+            if (state.boss.hp <= 0) {
+                state.bossDef = (state.bossDef || 0) + 1; addXP(state.boss.rew.xp); addGold(state.boss.rew.gold);
+                toast("🗡️ Сессия повержена! +" + state.boss.rew.xp + " XP", "gold-toast");
+                state.boss.maxHp = Math.floor(state.boss.maxHp * 1.4); state.boss.hp = state.boss.maxHp;
+                state.boss.dmg += 2; state.boss.rew.xp = Math.floor(state.boss.rew.xp * 1.3); state.boss.rew.gold = Math.floor(state.boss.rew.gold * 1.3);
+                playSound("coin");
+            }
+        }
+        function toggleTask(id) {
+            const task = state.tasks.find(t => t.id === id); if (!task) return;
+            if (task.type === "reward") {
+                if (state.player.gold >= task.cost) { state.player.gold -= task.cost; toast("🎁 " + task.name + " получено!", "gold-toast"); playSound("coin"); }
+                else { toast("❌ Не хватает " + (task.cost - state.player.gold) + " баллов", "error"); }
+                render(); return;
+            }
+            pushUndo();
+            if (!task.done) {
+                task.done = true; task.streak = (task.streak || 0) + 1;
+                const xpGain = { easy: 10, medium: 20, hard: 35 }[task.diff];
+                const goldGain = { easy: 5, medium: 12, hard: 20 }[task.diff];
+                addXP(xpGain); addGold(goldGain); state.player.done++; heal(2); damageBoss(state.boss.dmg);
+                updateStreak(); updateDailyStat(); toast("✅ " + task.name + " +" + xpGain + " XP", "success");
+                playSound("ok"); spawnParticle("⭐");
+            } else {
+                task.done = false; task.streak = Math.max(0, task.streak - 1);
+                const xpLoss = { easy: 10, medium: 20, hard: 35 }[task.diff];
+                const goldLoss = { easy: 5, medium: 12, hard: 20 }[task.diff];
+                state.player.xp = Math.max(0, state.player.xp - xpLoss); state.player.gold = Math.max(0, state.player.gold - goldLoss);
+                state.player.done = Math.max(0, state.player.done - 1);
+            }
+            saveState(); render();
+        }
+        function updateStreak() {
+            const today = new Date().toISOString().split("T")[0]; if (state.lastActive === today) return;
+            const yesterday = new Date(Date.now() - 86400000).toISOString().split("T")[0];
+            state.player.streak = state.lastActive === yesterday ? state.player.streak + 1 : 1;
+            if (state.player.streak > state.player.maxStreak) state.player.maxStreak = state.player.streak;
+            state.lastActive = today; if (!state.activeDates.includes(today)) state.activeDates.push(today);
+        }
+        function updateDailyStat() { const today = new Date().toISOString().split("T")[0]; state.dailyStats[today] = (state.dailyStats[today] || 0) + 1; }
+        function addTask(type, name, desc, cat, dead, diff, cost) {
+            pushUndo();
+            state.tasks.push({ id: "t_" + Date.now() + "_" + Math.random().toString(36).substr(2, 6), type, name, desc: desc || "", cat: cat || "Личное", dead: dead || "", diff: diff || "easy", cost: cost || 0, done: false, streak: 0 });
+            saveState();
+        }
+        function updateTask(id, data) { pushUndo(); const idx = state.tasks.findIndex(t => t.id === id); if (idx !== -1) Object.assign(state.tasks[idx], data); saveState(); }
+        function deleteTask(id) { pushUndo(); state.tasks = state.tasks.filter(t => t.id !== id); saveState(); render(); toast("🗑️ Задача удалена", "error"); }
+        function getFilteredTasks() {
+            const typeMap = { habits: "habit", dailies: "daily", todos: "todo", rewards: "reward" };
+            let tasks = state.tasks.filter(t => t.type === typeMap[currentTab]);
+            if (state.search) tasks = tasks.filter(t => t.name.toLowerCase().includes(state.search.toLowerCase()) || t.desc.toLowerCase().includes(state.search.toLowerCase()));
+            const today = new Date().toISOString().split("T")[0];
+            if (state.filter === "today") tasks = tasks.filter(t => t.dead === today);
+            if (state.filter === "overdue") tasks = tasks.filter(t => t.dead && t.dead < today && !t.done);
+            return tasks;
+        }
+        function render() {
+            updateProfileUI(); updateStatsUI(); renderTaskList(); updateCounters(); renderBossUI(); renderPetUI(); updateHeatmap(); updateTodayWidget(); applyTheme();
+        }
+        function updateProfileUI() {
+            document.getElementById("pName").textContent = state.player.name;
+            let clsIcon = "🎓";
+            if (state.player.cls === "Активист") clsIcon = "🚀";
+            else if (state.player.cls === "Фрилансер") clsIcon = "💻";
+            else if (state.player.cls === "Отличник") clsIcon = "🌟";
+            
+            document.getElementById("pClass").textContent = clsIcon + " " + state.player.cls;
+            document.getElementById("avatarEl").innerHTML = state.player.av + '<span id="avatarLvl" style="position: absolute; bottom: -4px; right: -4px; background: var(--accent); color: white; font-size: 10px; padding: 2px 6px; border-radius: 12px; font-weight: 700;">' + state.player.level + '</span>';
+            const xpPercent = (state.player.xp / state.player.xpN) * 100; const hpPercent = (state.player.hp / state.player.maxHp) * 100;
+            document.getElementById("xpBar").style.width = xpPercent + "%"; document.getElementById("hpBar").style.width = hpPercent + "%";
+            document.getElementById("xpTxt").textContent = state.player.xp + "/" + state.player.xpN;
+            document.getElementById("hpTxt").textContent = state.player.hp + "/" + state.player.maxHp;
+            document.getElementById("aStr").textContent = state.player.attr.str; document.getElementById("aInt").textContent = state.player.attr.int; document.getElementById("aEnd").textContent = state.player.attr.end;
+        }
+        function updateStatsUI() {
+            document.getElementById("sDone").textContent = state.player.done; document.getElementById("sGold").textContent = Math.floor(state.player.gold);
+            const activeCount = state.tasks.filter(t => !t.done && t.type !== "reward").length;
+            document.getElementById("sActive").textContent = activeCount; document.getElementById("sStreak").textContent = state.player.maxStreak;
+        }
+        function renderTaskList() {
+            const container = document.getElementById("taskList"); const tasks = getFilteredTasks();
+            if (tasks.length === 0) { container.innerHTML = '<div class="empty" style="text-align:center; padding: 40px; color: var(--text-muted);"><div style="font-size: 32px; margin-bottom: 8px;">🚀</div><p style="font-size: 13px;">Пока нет задач. Добавьте первую!</p></div>'; return; }
+            const today = new Date().toISOString().split("T")[0];
+            container.innerHTML = tasks.map(t => {
+                const xpVal = { easy: 10, medium: 20, hard: 35 }[t.diff];
+                const diffStars = { easy: 1, medium: 2, hard: 3 }[t.diff];
+                const dots = Array(3).fill().map((_, i) => `<span style="width:6px;height:6px;border-radius:50%;background:${i < diffStars ? 'var(--accent)' : 'var(--text-muted)'}; opacity: ${i < diffStars ? 1 : 0.3}"></span>`).join('');
+                const isOverdue = t.dead && t.dead < today && !t.done;
+                return `<div class="task-item ${t.type} ${t.done ? 'completed' : ''} ${isOverdue ? 'overdue' : ''}" data-id="${t.id}" style="display:flex; align-items:center; gap:12px; padding:12px; background: var(--bg-card); border-radius: 14px; margin-bottom: 6px; border: 1px solid var(--border);">
+                        <div class="t-check" style="width:24px;height:24px;border:2px solid var(--text-muted);border-radius:8px;display:flex;align-items:center;justify-content:center; font-weight: bold;">${t.done ? '✓' : ''}</div>
+                        <div style="flex:1;"><div style="font-weight:600; font-size:13px; color: var(--text-primary);">${escapeHtml(t.name)}</div>${t.desc ? `<div style="font-size:11px; color: var(--text-secondary); margin-top: 2px;">${escapeHtml(t.desc)}</div>` : ''}<div style="display:flex; gap:6px; margin-top:6px; flex-wrap:wrap; align-items: center;"><span style="font-size:10px; padding:2px 6px; background:rgba(139,148,246,0.15); color: var(--purple); border-radius:12px; font-weight: 600;">+${xpVal} XP</span>${t.streak > 0 ? `<span style="font-size:10px; background:rgba(245,158,11,0.15); color: var(--gold); border-radius:12px; padding:2px 6px; font-weight: 600;">🔥${t.streak}</span>` : ''}<span style="font-size:10px; color: var(--text-muted);">${t.cat}</span>${t.dead ? `<span style="font-size:10px; color:var(--red); font-weight: 600;">📅 ${t.dead}</span>` : ''}<div style="display:flex; gap:3px; margin-left: auto;">${dots}</div></div></div>
+                        <div class="t-acts" style="display:flex; gap:4px;"><button class="t-act" onclick="event.stopPropagation(); openEditTask('${t.id}')" style="background:none; border:none; font-size:16px; cursor:pointer; padding: 4px;">✏️</button><button class="t-act del" onclick="event.stopPropagation(); deleteTask('${t.id}')" style="background:none; border:none; font-size:16px; cursor:pointer; padding: 4px;">🗑</button></div>
+                    </div>`;
+            }).join('');
+            attachTaskClickListeners();
+        }
+        function escapeHtml(str) { return str.replace(/[&<>]/g, function(m) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]; }); }
+        function attachTaskClickListeners() { document.querySelectorAll('.task-item').forEach(el => { el.removeEventListener('click', taskClickHandler); el.addEventListener('click', taskClickHandler); }); }
+        function taskClickHandler(e) { if (e.target.closest('.t-act')) return; const id = this.getAttribute('data-id'); if (id) toggleTask(id); }
+        function updateCounters() {
+            const counts = { habits: 0, dailies: 0, todos: 0, rewards: 0 };
+            state.tasks.forEach(t => { if (t.type === 'habit') counts.habits++; else if (t.type === 'daily') counts.dailies++; else if (t.type === 'todo') counts.todos++; else if (t.type === 'reward') counts.rewards++; });
+            const setCnt = (id, val) => { const el = document.getElementById(id); if (el) { el.textContent = val; el.style.display = val > 0 ? 'inline-block' : 'none'; } };
+            setCnt("cHabitsMobile", counts.habits); setCnt("cDailiesMobile", counts.dailies); setCnt("cTodosMobile", counts.todos); setCnt("cRewardsMobile", counts.rewards);
+        }
+        function renderBossUI() {
+            const percent = (state.boss.hp / state.boss.maxHp) * 100;
+            // Boss UI can be expanded later, keeping minimal for now
+        }
+        function renderPetUI() {
+            // Pet UI can be expanded later
+        }
+        function updateHeatmap() {
+            const heatmapEl = document.getElementById("heatmap") || document.getElementById("heatmapDesktop"); if (!heatmapEl) return;
+            const now = new Date(); let html = '';
+            for (let i = 51; i >= 0; i--) {
+                const d = new Date(); d.setDate(now.getDate() - i); const key = d.toISOString().split("T")[0];
+                const val = state.dailyStats[key] || 0;
+                html += `<div class="hm-cell" style="aspect-ratio:1; border-radius:4px; background:${val === 0 ? 'rgba(128,128,128,0.1)' : 'var(--green)'}; opacity:${Math.min(0.3 + val * 0.15, 1)};"></div>`;
+            }
+            heatmapEl.innerHTML = html;
+        }
+        function updateTodayWidget() {
+            const d = new Date(); const days = ['Вс','Пн','Вт','Ср','Чт','Пт','Сб']; const months = ['янв','фев','мар','апр','мая','июн','июл','авг','сен','окт','ноя','дек'];
+            const todayStr = days[d.getDay()] + ', ' + d.getDate() + ' ' + months[d.getMonth()];
+            const pending = state.tasks.filter(t => !t.done && (t.type === 'daily' || t.type === 'todo')).length;
+            const completed = state.tasks.filter(t => t.done).length;
+            const widgetHtml = `<b>${todayStr}</b><br>⏳ ${pending} | ✅ ${completed}`;
+            ["todayWidgetMobile", "todayWidgetDesktop"].forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = widgetHtml; });
+        }
+        function applyTheme() { document.documentElement.setAttribute("data-theme", state.theme); const toggle = document.getElementById("themeToggleMobile"); if (toggle) { toggle.style.background = state.theme === "dark" ? "var(--green)" : "var(--text-muted)"; toggle.firstElementChild.style.transform = state.theme === "dark" ? "translateX(0)" : "translateX(-20px)"; } }
+        function toggleThemeMobile() { state.theme = state.theme === "dark" ? "light" : "dark"; applyTheme(); saveState(); }
+        function toggleSound() { soundEnabled = !soundEnabled; state.sound = soundEnabled; saveState(); const btn = document.getElementById("soundToggleMobile"); if (btn) btn.textContent = soundEnabled ? "🔊" : "🔇"; toast(soundEnabled ? "🔊 Звуки включены" : "🔇 Звуки выключены", "success"); }
+        function toast(msg, type) { const container = document.getElementById("toastC"); const toastEl = document.createElement("div"); toastEl.className = "toast " + (type || "success"); toastEl.textContent = msg; container.appendChild(toastEl); setTimeout(() => toastEl.remove(), 2500); }
+        function spawnParticle(emoji) { for (let i = 0; i < 3; i++) setTimeout(() => { const p = document.createElement("div"); p.textContent = emoji; p.style.position = "fixed"; p.style.bottom = "20%"; p.style.right = "20%"; p.style.fontSize = "24px"; p.style.pointerEvents = "none"; p.style.zIndex = "9999"; p.style.animation = "fadeOut 0.6s forwards"; document.body.appendChild(p); setTimeout(() => p.remove(), 600); }, i * 60); }
+        function confettiEffect() { for (let i = 0; i < 20; i++) setTimeout(() => { const c = document.createElement("div"); c.style.position = "fixed"; c.style.width = "8px"; c.style.height = "8px"; c.style.background = ["#06b6d4","#3b82f6","#10b981"][Math.floor(Math.random()*3)]; c.style.borderRadius = "50%"; c.style.left = Math.random() * 100 + "%"; c.style.top = "-10px"; c.style.pointerEvents = "none"; c.style.animation = "fall 1s linear forwards"; document.body.appendChild(c); setTimeout(() => c.remove(), 1000); }, i * 30); }
+        const styleSheet = document.createElement("style"); styleSheet.textContent = "@keyframes fall { to { transform: translateY(100vh); opacity: 0; } }"; document.head.appendChild(styleSheet);
+        
+        function openCreateTask() {
+            editMode = false; editId = null; const sheet = document.getElementById("mTaskMobile");
+            document.getElementById("mTaskTitleMobile").innerHTML = { habits: "🔄 Новая привычка", dailies: "📅 Ежедневная задача", todos: "📝 Новая задача", rewards: "🎁 Новая награда" }[currentTab] || "✨ Задача";
+            document.getElementById("rewardCostBoxMobile").style.display = currentTab === "rewards" ? "block" : "none";
+            document.getElementById("tNameMobile").value = ""; document.getElementById("tDescMobile").value = ""; document.getElementById("tDeadMobile").value = ""; document.getElementById("tCostMobile").value = "10";
+            document.querySelectorAll("#mTaskMobile .d-btn").forEach(b => b.classList.remove("active")); document.querySelector("#mTaskMobile .d-btn[data-diff='easy']").classList.add("active");
+            editDifficulty = "easy"; sheet.classList.add("active"); document.body.style.overflow = "hidden";
+        }
+        function openEditTask(id) {
+            const task = state.tasks.find(t => t.id === id); if (!task) return;
+            editMode = true; editId = id; document.getElementById("mTaskTitleMobile").innerHTML = "✏️ Редактировать задачу";
+            document.getElementById("rewardCostBoxMobile").style.display = task.type === "reward" ? "block" : "none";
+            document.getElementById("tNameMobile").value = task.name; document.getElementById("tDescMobile").value = task.desc || "";
+            document.getElementById("tCatMobile").value = task.cat; document.getElementById("tDeadMobile").value = task.dead || "";
+            document.getElementById("tCostMobile").value = task.cost || 0; editDifficulty = task.diff;
+            document.querySelectorAll("#mTaskMobile .d-btn").forEach(b => b.classList.remove("active")); document.querySelector(`#mTaskMobile .d-btn[data-diff='${task.diff}']`).classList.add("active");
+            document.getElementById("mTaskMobile").classList.add("active"); document.body.style.overflow = "hidden";
+        }
+        function saveTaskFromSheet() {
+            const name = document.getElementById("tNameMobile").value.trim(); if (!name) { toast("❌ Введите название задачи", "error"); return; }
+            const desc = document.getElementById("tDescMobile").value; const cat = document.getElementById("tCatMobile").value;
+            const dead = document.getElementById("tDeadMobile").value; const cost = parseInt(document.getElementById("tCostMobile").value) || 0;
+            const typeMap = { habits: "habit", dailies: "daily", todos: "todo", rewards: "reward" }; const taskType = typeMap[currentTab];
+            if (editMode) { updateTask(editId, { name, desc, cat, dead, diff: editDifficulty, cost: taskType === "reward" ? cost : 0 }); toast("✏️ Задача обновлена", "success"); }
+            else { addTask(taskType, name, desc, cat, dead, editDifficulty, taskType === "reward" ? cost : 0); toast("✨ Задача создана", "success"); }
+            closeSheet("mTaskMobile"); render();
+        }
+        function closeSheet(id) { const sheet = document.getElementById(id); sheet.classList.remove("active"); document.body.style.overflow = ""; }
+        function openShop() {
+            const shopGrid = document.getElementById("shopGridMobile");
+            const items = [{id:"sw1",n:"Кофе ☕",i:"☕",c:20,d:"+10 к энергии"},{id:"pt1",n:"Час игр 🎮",i:"🎮",c:50,d:"Отдых"},{id:"bk1",n:"Вкусняшка 🍕",i:"🍕",c:40,d:"Награда"},{id:"rn1",n:"Новый плейлист 🎧",i:"🎧",c:30,d:"Для учёбы"}];
+            shopGrid.innerHTML = items.map(it => `<div class="shop-item" data-id="${it.id}" style="padding:12px; text-align:center; background:var(--bg-card); border-radius:14px; border: 1px solid var(--glass-border); cursor: pointer; transition: transform 0.1s;"><div style="font-size:28px;">${it.i}</div><div style="font-weight:600; font-size:13px; margin-top:4px; color: var(--text-primary);">${it.n}</div><div style="font-size:10px; opacity:0.7; color: var(--text-secondary);">${it.d}</div><div style="font-size:12px; color:var(--gold); margin-top:4px; font-weight: 700;">${it.c} ⭐</div></div>`).join('');
+            document.getElementById("mShopMobile").classList.add("active");
+            shopGrid.querySelectorAll('.shop-item').forEach(el => {
+                el.addEventListener('click', () => {
+                    const id = el.dataset.id; const item = items.find(i => i.id === id);
+                    if (state.player.gold >= item.c) { state.player.gold -= item.c; state.purchased.push(id); saveState(); render(); toast(`🛍️ ${item.n} получено!`, "gold-toast"); closeSheet("mShopMobile"); }
+                    else toast("❌ Не хватает баллов", "error");
+                });
+            });
+        }
+        function openAvatarSelect() {
+            const avatars = ["🚀","🎓","💻","🎨","🎧","📚","🎯","🦉"]; const grid = document.getElementById("avatarGridMobile");
+            grid.innerHTML = avatars.map(a => `<div class="av-item" data-av="${a}" style="font-size:32px; padding:12px; text-align:center; background:var(--bg-card); border-radius:12px; border: 1px solid var(--glass-border); cursor:pointer; transition: transform 0.1s;">${a}</div>`).join('');
+            document.getElementById("mAvatarMobile").classList.add("active");
+            grid.querySelectorAll('.av-item').forEach(el => {
+                el.addEventListener('click', () => { state.player.av = el.dataset.av; saveState(); render(); closeSheet("mAvatarMobile"); });
+            });
+        }
+        function exportData() { const dataStr = JSON.stringify(state); const blob = new Blob([dataStr], {type: "application/json"}); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = "studlife_backup.json"; a.click(); URL.revokeObjectURL(url); toast("💾 Данные сохранены", "success"); }
+        function importData() { document.getElementById("impFile2").click(); }
+        document.getElementById("impFile2").addEventListener("change", (e) => {
+            const file = e.target.files[0]; if (!file) return; const reader = new FileReader();
+            reader.onload = (ev) => { try { state = JSON.parse(ev.target.result); saveState(); render(); toast("📥 Данные успешно импортированы", "success"); } catch(err) { toast("❌ Ошибка чтения файла", "error"); } };
+            reader.readAsText(file); e.target.value = "";
+        });
+        document.getElementById("fabAdd")?.addEventListener("click", openCreateTask);
+        document.getElementById("addBtnDesktop")?.addEventListener("click", openCreateTask);
+        document.getElementById("mTaskSaveMobile")?.addEventListener("click", saveTaskFromSheet);
+        document.getElementById("mTaskCancelMobile")?.addEventListener("click", () => closeSheet("mTaskMobile"));
+        document.querySelectorAll("#mTaskMobile .d-btn").forEach(btn => btn.addEventListener("click", function() { document.querySelectorAll("#mTaskMobile .d-btn").forEach(b => b.classList.remove("active")); this.classList.add("active"); editDifficulty = this.dataset.diff; }));
+        document.querySelectorAll(".m-tab-btn").forEach(btn => btn.addEventListener("click", function() { document.querySelectorAll(".m-tab-btn").forEach(b => b.classList.remove("active")); this.classList.add("active"); currentTab = this.dataset.tab; document.getElementById("secTitle").innerHTML = { habits:"🔄 Привычки", dailies:"📅 Ежедневные", todos:"📝 Задачи", rewards:"🎁 Награды" }[currentTab]; render(); }));
+        document.getElementById("searchInput")?.addEventListener("input", (e) => { state.search = e.target.value; render(); });
+        document.querySelectorAll(".filter-btn").forEach(btn => btn.addEventListener("click", function() { document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active")); this.classList.add("active"); state.filter = this.dataset.filter; render(); }));
+        document.getElementById("settingsBtnMobile")?.addEventListener("click", () => document.getElementById("mSettingsMobile").classList.add("active"));
+        document.getElementById("avatarBox")?.addEventListener("click", openAvatarSelect);
+        document.getElementById("soundToggleMobile")?.addEventListener("click", toggleSound);
+        
+        window.toggleThemeMobile = toggleThemeMobile; window.toggleSound = toggleSound; window.closeSheet = closeSheet; window.openEditTask = openEditTask; window.deleteTask = deleteTask; window.undoAction = undoAction; window.exportData = exportData; window.importData = importData;
+    </script>
+</body>
+</html>
